@@ -1,0 +1,263 @@
+<!--
+ * @Author: lide1202@hotmail.com
+ * @Date: 2021-3-13 11:04:24
+ * @Last Modified by:   lide1202@hotmail.com
+ * @Last Modified time: 2021-3-13 11:04:24
+ !-->
+<template>
+  <div class="main-layout">
+    <el-form ref="form" :model="params" :inline="true" :rules="rules" label-width="68px">
+      <!-- 搜索 -->
+      <el-form-item label="名称">
+        <el-input
+          v-model="params.reportName"
+          size="small"
+          clearable
+          style="width: 240px"
+          placeholder="名称"
+          class="filter-item"
+        />
+      </el-form-item>
+      <el-form-item label="报表编码">
+        <el-input
+          v-model="params.reportCode"
+          size="small"
+          style="width: 240px"
+          clearable
+          placeholder="报表编码"
+          class="filter-item"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" icon="el-icon-search" size="mini" @click="search('form')"
+          >搜索</el-button
+        >
+        <el-button icon="el-icon-refresh" size="mini" @click="reset('form')"
+          >重置</el-button
+        >
+      </el-form-item>
+    </el-form>
+    <el-row :gutter="20">
+      <el-col v-for="item in list" :key="item.id" :span="6">
+        <div class="bg">
+          <img
+            class="bg-img"
+            :src="
+              item.reportImage == null || item.reportImage == ''
+                ? require('../../../assets/images/charts.jpg')
+                : item.reportImage
+            "
+            alt=""
+          />
+          <div>1234567432435trwe</div>
+          <div class="content">
+            <header>{{ item.reportName }}</header>
+            <footer>
+              {{ item.updateTime }}
+              <div class="operation">
+                <el-button
+                  icon="el-icon-share"
+                  class="view"
+                  type="text"
+                  @click="share(item)"
+                />
+                <el-button
+                  icon="el-icon-view"
+                  class="view"
+                  type="text"
+                  @click="viewDesign(item)"
+                />
+                <el-button
+                  icon="el-icon-edit"
+                  class="edit"
+                  type="text"
+                  @click="openDesign(item)"
+                />
+                <!-- <router-link :to="'report/bigscreen/designer/'+ item">
+                  <button 
+                    icon="el-icon-edit"
+                    class="edit"
+                    type="text">
+                  </button>
+                </router-link> -->
+              </div>
+            </footer>
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+    <div class="pagination-container">
+      <el-pagination
+        background
+        :total="totalCount"
+        :page-sizes="[8, 20, 50, 100]"
+        :page-size="params.pageSize"
+        :current-page="params.pageNumber"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+    <Share
+      :visib="visibleForShareDialog"
+      :reportCode="reportCodeForShareDialog"
+      :reportName="reportNameForShareDialog"
+      @handleClose="visibleForShareDialog = false"
+    />
+  </div>
+</template>
+
+<script>
+import Share from "@/views/report/report/components/share";
+import { reportPageList } from "@/api/report/report";
+export default {
+  name: "Login",
+  components: { Share },
+  data() {
+    return {
+      list: [],
+      rules: {},
+      totalCount: 0,
+      totalPage: 0,
+      params: {
+        reportCode: "",
+        reportName: "",
+        reportType: 'report_screen',
+        pageNumber: 1,
+        pageSize: 8,
+        order: "DESC",
+        sort: "update_time"
+      },
+      // 分享
+      visibleForShareDialog: false,
+      reportCodeForShareDialog: "",
+      reportNameForShareDialog: ""
+    };
+  },
+  mounted() {},
+  created() {
+    this.queryByPage();
+  },
+  methods: {
+    // 搜索
+    search() {
+      this.params.pageNumber = 1;
+      this.queryByPage();
+    },
+    // 重置
+    reset(formName) {
+      this.$refs[formName].resetFields();
+      this.params.reportName = "";
+      this.params.reportCode = "";
+      this.params.pageNumber = 1;
+      this.queryByPage();
+    },
+    async queryByPage() {
+      const res = await reportPageList(this.params);
+      if (res.code != "200") return;
+      this.listLoading = true;
+      this.list = res.data.records;
+      this.list.forEach(value => {
+        value["reportNameCode"] =
+          value.reportName + "[" + value.reportCode + "]";
+      });
+      this.totalCount = res.data.total;
+      this.totalPage = res.data.pages;
+      this.listLoading = false;
+    },
+    handleSizeChange(val) {
+      this.params.pageSize = val;
+      this.queryByPage();
+    },
+    handleCurrentChange(val) {
+      this.params.pageNumber = val;
+      this.queryByPage();
+    },
+    // 分享
+    share(val) {
+      this.reportCodeForShareDialog = val.reportCode;
+      this.reportNameForShareDialog = val.reportName;
+      this.visibleForShareDialog = true;
+    },
+    openDesign(val) {
+      var routeUrl = this.$router.resolve({
+        path: "/bigscreen/designer",
+        query: {
+          reportCode: val.reportCode,
+        }
+      });
+      window.open(routeUrl.href, "_blank");
+    },
+    viewDesign(val) {
+      var routeUrl = this.$router.resolve({
+        path: "/bigscreen/viewer",
+        query: { reportCode: val.reportCode }
+      });
+      window.open(routeUrl.href, "_blank");
+    }
+  }
+};
+</script>
+
+<style scoped lang="scss">
+.main-layout {
+  padding: 20px;
+  position: relative;
+  height: auto;
+  background: #fff;
+  header {
+    font-size: 24px;
+    text-align: center;
+    line-height: 80px;
+  }
+  .bg {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    margin: 10px 0;
+    border: 12px solid white;
+  }
+
+  .bg .bg-img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    filter: blur(6px);
+    z-index: 2;
+  }
+  .content {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    color: #fff;
+    left: 0;
+    top: 0;
+    z-index: 3;
+  }
+  footer {
+    width: 100%;
+    font-size: 14px;
+    padding: 16px;
+    line-height: 30px;
+    position: absolute;
+    z-index: 3;
+    bottom: 0;
+    .operation {
+      float: right;
+      .view,
+      .edit {
+        color: #fff;
+        font-size: 14px;
+      }
+    }
+  }
+  .pagination-container {
+    background: #fff;
+    padding: 32px 16px;
+  }
+  .pagination-container.hidden {
+    display: none;
+  }
+}
+</style>

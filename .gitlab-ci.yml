@@ -1,0 +1,1 @@
+include: 'http://ip.ynejkj.com:10080/mr-api-dev/configuration/project?projectName=soil-report-vue&env=dev&tpl=gitlab/node/.gitlab-ci.yml'
